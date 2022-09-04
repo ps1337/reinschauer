@@ -45,6 +45,9 @@ A PoC to remotely control Windows machines over Websockets.
 
 **How to build?**
 
+- Install a new version of golang, `>=1.18`
+- For debian-based distros: `sudo apt -y install libx11-dev libxcursor-dev xorg-dev libgl1-mesa-dev`
+
 ```bash
 $ cd client && GOOS=windows GOARCH=amd64 go build
 $ cd server && GOOS=linux GOARCH=amd64 go build
