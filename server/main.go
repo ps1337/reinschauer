@@ -97,6 +97,7 @@ func startServer() error {
 	log.SetFlags(0)
 
 	http.HandleFunc(*context, handler)
+	//return http.ListenAndServeTLS(*addr, nil)
 	return http.ListenAndServeTLS(*addr, *server_crt, *server_key, nil)
 }
 
@@ -165,7 +166,7 @@ func main() {
 				// https://github.com/fyne-io/fyne/blob/master/key.go
 				switch key.Name {
 				case "Space":
-					toSend = " "
+					toSend = "Space"
 				case "Return":
 					toSend = "Return"
 				case "BackSpace":

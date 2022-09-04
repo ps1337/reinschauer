@@ -203,6 +203,8 @@ func TriggerKey(rawMessage string) {
 			i.ki.WVK = 0x5C
 		case "Escape":
 			i.ki.WVK = 0x1B
+		case "Space":
+			i.ki.WVK = 0x20
 		default:
 		}
 	}
