@@ -123,9 +123,9 @@ First, set up [BOF.NET](https://github.com/CCob/BOF.NET) according to the manual
 - To kill Reinschauer, use `bofnet_jobkill <Job ID>`.
 
 
-Then, use SSH and the [GatewayPorts](https://man.openbsd.org/sshd_config#GatewayPorts) feature: Add `GatewayPorts: clientspecified` to `sshd_config` and restart the SSH server. Then, `ssh -R '0.0.0.0:8080:localhost:6969'' [...]` will make your local port `6969` available on `0.0.0.0:8080`. Then, start the client with the required parameters or hardcode them. Be careful :)
+Then, use SSH and the [GatewayPorts](https://man.openbsd.org/sshd_config#GatewayPorts) feature: Add `GatewayPorts: clientspecified` to `sshd_config` and restart the SSH server. Then, `ssh -R '0.0.0.0:8080:localhost:6969'' [...]` will make your local port `6969` available on `0.0.0.0:8080`. Be careful :)
 
-or, set up a `socat` redirector on the Server:
+Or, set up a `socat` redirector on the Server:
 
 ```bash
 socat TCP4-LISTEN:<Server Port>,fork TCP4:127.0.0.1:6969
