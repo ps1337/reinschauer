@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -61,8 +61,6 @@ var quality_slider = &widget.Slider{Step: 10, Min: 1, Max: 100, OnChanged: func(
 	CONN.WriteMessage(websocket.TextMessage, []byte("QUL "+strconv.Itoa(int(f))))
 }}
 
-var shiftHeld = false
-
 func handler(w http.ResponseWriter, r *http.Request) {
 	_conn, err := upgrader.Upgrade(w, r, nil)
 	CONN = _conn
@@ -101,6 +99,17 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	quality_str := strconv.Itoa(DEFAULT_QUALITY)
 	CONN.WriteMessage(websocket.TextMessage, []byte("QUL "+quality_str))
 	quality_slider.SetValue(float64(DEFAULT_QUALITY))
+
+	// send regular pings
+	go func() {
+		for {
+			if CONN == nil {
+				continue
+			}
+			CONN.WriteMessage(websocket.TextMessage, []byte("ELO"))
+			time.Sleep(time.Second * 3)
+		}
+	}()
 
 	for {
 		messageType, message, err := CONN.ReadMessage()
@@ -188,41 +197,24 @@ func main() {
 	myApp := app.New()
 	WINDOW = myApp.NewWindow("R E I N S C H A U E R <3")
 
+	WINDOW.Canvas().SetOnTypedRune(func(r rune) {
+		if CONN == nil {
+			return
+		}
+		CONN.WriteMessage(websocket.TextMessage, []byte("KEY "+string(r)))
+	})
+
 	if deskCanvas, ok := WINDOW.Canvas().(desktop.Canvas); ok {
 		deskCanvas.SetOnKeyDown(func(key *fyne.KeyEvent) {
 			if CONN == nil {
 				return
 			}
-			toSend := ""
-			if key.Name == "LeftShift" || key.Name == "RightShift" {
-				shiftHeld = true
-				return
-			} else if len(key.Name) == 1 {
-				if shiftHeld {
-					toSend = strings.ToUpper(string(key.Name))
-				} else {
 
-					toSend = strings.ToLower(string(key.Name))
-				}
-			} else {
-				// https://github.com/fyne-io/fyne/blob/master/key.go
-				switch key.Name {
-				case "Space":
-					toSend = "Space"
-				case "Return":
-					toSend = "Return"
-				case "BackSpace":
-					toSend = "BackSpace"
-				default:
-					toSend = string(key.Name)
-				}
+			// single char -> handled via SetOnTypedRune
+			if len(key.Name) == 1 {
+				return
 			}
-			CONN.WriteMessage(websocket.TextMessage, []byte("KEY "+toSend))
-		})
-		deskCanvas.SetOnKeyUp(func(key *fyne.KeyEvent) {
-			if key.Name == "LeftShift" || key.Name == "RightShift" {
-				shiftHeld = false
-			}
+			CONN.WriteMessage(websocket.TextMessage, []byte("KEY "+string(key.Name)))
 		})
 	}
 

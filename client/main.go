@@ -102,6 +102,7 @@ func main() {
 	for {
 		err := handleConnection()
 		if err != nil {
+			fmt.Println(err.Error())
 			fmt.Println("Restarting...")
 			time.Sleep(time.Second * 5)
 		}
@@ -171,16 +172,24 @@ func TriggerKey(rawMessage string) {
 			keycode := ret & 0xff
 			flags = int((ret >> 8) & 0xff)
 
-			// shift down
+			i.ki.DwFlags = 0
+			// modifier down
 			if flags == 1 {
+				// shift
 				i.ki.WVK = 0xA0
-				i.ki.DwFlags = 0
-				_, _, _ = fSendInput.Call(
-					1,
-					uintptr(unsafe.Pointer(&i)),
-					uintptr(unsafe.Sizeof(i)),
-				)
+			} else if flags == 2 {
+				// ctrl
+				i.ki.WVK = 0x11
+			} else if flags == 4 {
+				// alt
+				i.ki.WVK = 0x12
 			}
+
+			_, _, _ = fSendInput.Call(
+				1,
+				uintptr(unsafe.Pointer(&i)),
+				uintptr(unsafe.Sizeof(i)),
+			)
 
 			i.ki.DwFlags = 0
 			i.ki.WVK = uint16(keycode)
@@ -220,16 +229,23 @@ func TriggerKey(rawMessage string) {
 		uintptr(unsafe.Sizeof(i)),
 	)
 
+	// modifier up
+	i.ki.DwFlags = 0x0002
 	if flags == 1 {
-		// shift up
+		// shift
 		i.ki.WVK = 0xA0
-		i.ki.DwFlags = 0x0002
-		_, _, _ = fSendInput.Call(
-			1,
-			uintptr(unsafe.Pointer(&i)),
-			uintptr(unsafe.Sizeof(i)),
-		)
+	} else if flags == 2 {
+		// ctrl
+		i.ki.WVK = 0x11
+	} else if flags == 4 {
+		// alt
+		i.ki.WVK = 0x12
 	}
+	_, _, _ = fSendInput.Call(
+		1,
+		uintptr(unsafe.Pointer(&i)),
+		uintptr(unsafe.Sizeof(i)),
+	)
 	//fmt.Println(err.Error())
 }
 
@@ -264,7 +280,7 @@ func handleConnection() error {
 			}
 			messageType, message, err := connection.ReadMessage()
 			if err != nil {
-				return
+				continue
 			}
 
 			if messageType != websocket.TextMessage {
@@ -299,6 +315,7 @@ func handleConnection() error {
 				} else {
 					log.Printf("SCL: Missing SCL Number")
 				}
+
 			case "QUL":
 				if len(splitMessage) == 2 {
 					quality_int, err := strconv.Atoi(splitMessage[1])
@@ -316,6 +333,8 @@ func handleConnection() error {
 				TriggerClick(strMessage, true)
 			case "KEY":
 				TriggerKey(strMessage)
+			case "ELO":
+				// nothing, just a ping
 			default:
 				log.Printf("unknown cmd")
 			}
