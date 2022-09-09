@@ -119,7 +119,6 @@ First, set up [BOF.NET](https://github.com/CCob/BOF.NET) according to the manual
 
 ### Sending Traffic to Another Server
 
-- Set the session to interactive: `sleep 0`.
 - Execute Reinschauer in background: `bofnet_job reinschauer_dotnet.BofStuff <Server IP> <Server Port> true`. The boolean parameter enables TLS usage.
 - To kill Reinschauer, use `bofnet_jobkill <Job ID>`.
 
