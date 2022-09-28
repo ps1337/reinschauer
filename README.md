@@ -2,7 +2,7 @@
 
 ![Hello](https://github.com/ps1337/reinschauer/blob/main/server/reinschauer.jpg?raw=true)
 
-A PoC to remotely control Windows machines over Websockets.
+A PoC to remotely control Windows machines over Websockets. Check out [my blog](https://bananamafia.dev/post/reinschauer/) for a writeup.
 
 ![Hello](https://github.com/ps1337/reinschauer/blob/main/res/reinschauer.gif?raw=true)
 
