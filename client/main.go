@@ -341,6 +341,7 @@ func handleConnection() error {
 		}
 	}()
 
+	jpg := []byte{}
 	for {
 		if connection == nil {
 			time.Sleep(time.Second * 5)
@@ -350,7 +351,11 @@ func handleConnection() error {
 		case <-done:
 			return errors.New("gofunc failed")
 		case <-ticker.C:
-			err := connection.WriteMessage(websocket.BinaryMessage, GetOneJPGAsBytes())
+			jpg, err = GetOneJPGAsBytes()
+			if err != nil {
+				continue
+			}
+			err := connection.WriteMessage(websocket.BinaryMessage, jpg)
 			//log.Println("sent one")
 			if err != nil {
 				continue
@@ -385,11 +390,11 @@ func GetBitmapHeader(width, height int) (header win.BITMAPINFOHEADER) {
 	return header
 }
 
-func GetOneJPGAsBytes() []byte {
+func GetOneJPGAsBytes() ([]byte, error) {
 	resultBuf := new(bytes.Buffer)
 	tempImage, err := _GetOneRaw()
 	if err != nil {
-		os.Exit(-1)
+		return nil, errors.New("Getting Frame Failed")
 	}
 
 	resizedImage := resize.Resize(uint(tempImage.Bounds().Dx()/DEFAULT_SCALER), 0, tempImage, resize.Lanczos3)
@@ -398,10 +403,10 @@ func GetOneJPGAsBytes() []byte {
 	err = jpeg.Encode(resultBuf, resizedImage, &jpeg.Options{Quality: DEFAULT_QUALITY})
 
 	if err != nil {
-		log.Panic(err)
+		return nil, errors.New("Encode Failed")
 	}
 
-	return resultBuf.Bytes()
+	return resultBuf.Bytes(), nil
 }
 
 func _GetOneRaw() (*image.RGBA, error) {
