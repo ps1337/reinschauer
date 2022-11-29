@@ -82,31 +82,39 @@ namespace reinschauer_dotnet
                 // 1 fps as default
                 timer.Interval = 1000;
                 timer.Elapsed += delegate {
-                    if(already_running || client == null || !client.IsRunning) { return;  }
-                    already_running = true;
-                    bm = new Bitmap(Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height, PixelFormat.Format32bppArgb); 
-                    g = Graphics.FromImage(bm);
-                    g.CopyFromScreen(0, 0, 0, 0, bm.Size, CopyPixelOperation.SourceCopy);
-                    resized = new Bitmap(bm, new Size(bm.Width / scaler, bm.Height / scaler));
-                    memStream = new MemoryStream();
+                    try {
+                        if(already_running || client == null || !client.IsRunning) { return;  }
+                        already_running = true;
+                        bm = new Bitmap(Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height, PixelFormat.Format32bppArgb);
+                        g = Graphics.FromImage(bm);
+                        g.CopyFromScreen(0, 0, 0, 0, bm.Size, CopyPixelOperation.SourceCopy);
+                        resized = new Bitmap(bm, new Size(bm.Width / scaler, bm.Height / scaler));
+                        memStream = new MemoryStream();
 
-                    if(codecfInfo != null)
-                    {
-                        resized.Save(memStream, codecfInfo, myEncoderParameters);
-                    }
-                    else
-                    {
-                        resized.Save(memStream, ImageFormat.Jpeg);
-                    }
+                        if(codecfInfo != null)
+                        {
+                            resized.Save(memStream, codecfInfo, myEncoderParameters);
+                        }
+                        else
+                        {
+                            resized.Save(memStream, ImageFormat.Jpeg);
+                        }
 
-                    if (client != null && client.IsRunning) {
-                        client.Send(memStream.ToArray());
+                        if (client != null && client.IsRunning) {
+                            client.Send(memStream.ToArray());
+                        }
+                        bm.Dispose();
+                        resized.Dispose();
+                        g.Dispose();
+                        memStream.Dispose();
+                        already_running = false;
                     }
-                    bm.Dispose();
-                    resized.Dispose();
-                    g.Dispose();
-                    memStream.Dispose();
-                    already_running = false;
+                    catch(Exception e) {
+                        // bad
+                    }
+                    finally {
+                        already_running = false;
+                    }
                 };
                 timer.Enabled = true;
 
