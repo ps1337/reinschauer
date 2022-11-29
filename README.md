@@ -88,7 +88,7 @@ I've included a pre-built and standalone version of the dotnet variant in this r
 
 **I don't have a direct connection between `client` and `server`**
 
-> You can use the Cobaltstrike CNA script, which tunnels traffic via Beacon.
+> You can use a CobaltStrike Beacon to tunnel traffic.
 
 **I don't have Cobaltstrike!**
 
@@ -114,8 +114,6 @@ First, set up [BOF.NET](https://github.com/CCob/BOF.NET) according to the manual
 - Set up remote port forwarding: `rportfwd_local 6969 127.0.0.1 6969`.
 - Execute Reinschauer in background: `bofnet_job reinschauer_dotnet.BofStuff`. This automatically causes Reinschauer to connect to `127.0.0.1:6969` on `127.0.0.1` of the target machine. This also deactivates TLS, since it uses the Beacon connection anyway.
 - To kill Reinschauer, use `bofnet_jobkill <Job ID>`.
-
-*Important note regarding remote port forwarding:* It seems that the `rportfwd_local` causes Beacon to listen on `0.0.0.0` and there seems to be no way to set it to `127.0.0.1` :/ This may trigger a Windows Firewall prompt on the system and that's not cool. If you don't want this, use another remote port forwarding solution for Cobaltstrike or use the following approach.
 
 ### Sending Traffic to Another Server
 
