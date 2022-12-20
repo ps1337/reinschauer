@@ -342,6 +342,7 @@ func handleConnection() error {
 	}()
 
 	jpg := []byte{}
+	alreadyRunning := false
 	for {
 		if connection == nil {
 			time.Sleep(time.Second * 5)
@@ -351,15 +352,22 @@ func handleConnection() error {
 		case <-done:
 			return errors.New("gofunc failed")
 		case <-ticker.C:
+			if alreadyRunning {
+				continue
+			}
+			alreadyRunning = true
 			jpg, err = GetOneJPGAsBytes()
 			if err != nil {
+				alreadyRunning = false
 				continue
 			}
 			err := connection.WriteMessage(websocket.BinaryMessage, jpg)
 			//log.Println("sent one")
 			if err != nil {
+				alreadyRunning = false
 				continue
 			}
+			alreadyRunning = false
 		case <-interrupt:
 			log.Println("interrupt")
 
